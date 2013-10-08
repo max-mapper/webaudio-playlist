@@ -1,3 +1,5 @@
+var volumeInput = document.querySelector('input')
+var playButton = document.querySelector('h3')
 var audioCtx = null;
 var soundBuffer = null;
 
@@ -10,7 +12,7 @@ function playSound(quick) {
         sound.connect(gain);
         gain.connect(audioCtx.destination);
 
-        var volume = 0.5;
+        var volume = +volumeInput.value
         gain.gain.value = volume;
 
         if(quick) {
@@ -34,7 +36,7 @@ function init() {
       touchend = 'touchend'
     }
     
-    document.body.addEventListener(touchstart, function(e) {
+    playButton.addEventListener(touchstart, function(e) {
       playSound()
     })
 
