@@ -10,7 +10,7 @@ function playSound(quick) {
         sound.connect(gain);
         gain.connect(audioCtx.destination);
 
-        var volume = 100;
+        var volume = 0.5;
         gain.gain.value = volume;
 
         if(quick) {
