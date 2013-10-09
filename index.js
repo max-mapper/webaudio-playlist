@@ -1,60 +1,68 @@
-var volumeInput = document.querySelector('input')
-var playButton = document.querySelector('h3')
-var audioCtx = null;
-var soundBuffer = null;
+var Spinning = require('spinning')
 
-function playSound(quick) {
-    if(soundBuffer) {
-        var sound = audioCtx.createBufferSource();
-        var gain = audioCtx.createGainNode();
-        sound.buffer = soundBuffer;
-        // sound.playbackRate.value = x/canvas.width*2;
-        sound.connect(gain);
-        gain.connect(audioCtx.destination);
-
-        var volume = +volumeInput.value
-        gain.gain.value = volume;
-
-        if(quick) {
-            sound.noteGrainOn(0., .2, .4);
-        }
-        else {
-            sound.noteOn(0);
-        }
-    }
-}
-
-function init() {
+module.exports = function player(mp3s, volume) {
+  var sound, gain, soundBuffer, audioCtx
+  var currentSong = 0
+  var started = false
   
-    var touchstart = 'mousedown'
-    var touchmove = 'mousemove'
-    var touchend = 'mouseup'
-
-    if('ontouchstart' in window) {
-      touchstart = 'touchstart'
-      touchmove = 'touchmove'
-      touchend = 'touchend'
+  player.playing = false
+  player.start = start
+  player.stop = stop
+  
+  if ('webkitAudioContext' in window) {
+    audioCtx = new webkitAudioContext()
+  }
+  
+  loadSong(mp3s[currentSong])
+  currentSong++
+  
+  return player
+  
+  function next() {
+    var nextSong = mp3s[currentSong]
+    if (!nextSong) {
+      player.playing = false
+      return
     }
-    
-    playButton.addEventListener(touchstart, function(e) {
-      playSound()
-    })
+    player.playing = true
+    loadSong(nextSong, start)
+    currentSong++
+  }
+  
+  function start(quick) {
+    if (!soundBuffer) return
+    player.playiing = true
+    sound = audioCtx.createBufferSource()
+    gain = audioCtx.createGainNode()
+    sound.buffer = soundBuffer
+    sound.connect(gain)
+    sound.onended = next
+    gain.connect(audioCtx.destination)
 
-    if('webkitAudioContext' in window) {
-        audioCtx = new webkitAudioContext();
-
-        function bufferSound(event) {
-            var request = event.target;
-            soundBuffer = audioCtx.createBuffer(request.response, false);
-        }
-
-        var request = new XMLHttpRequest();
-        request.open('GET', 'sound.mp3', true);
-        request.responseType = 'arraybuffer';
-        request.addEventListener('load', bufferSound, false);
-        request.send();
+    gain.gain.value = volume || 0.5
+    if (quick) sound.noteGrainOn(0., .2, .4)
+    else sound.noteOn(0)
+  }
+  
+  function stop() {
+    if (audioCtx) {
+      gain.disconnect()
+      player.playing = false
     }
+  }
 
+  function loadSong(url, cb) {
+    var spinner = Spinning().text('loading...').light().size(200)
+    var request = new XMLHttpRequest()
+    request.open('GET', url, true)
+    request.responseType = 'arraybuffer'
+    request.addEventListener('load', function(event) {
+      var request = event.target
+      soundBuffer = audioCtx.createBuffer(request.response, false)
+      spinner.remove()
+      if (cb) cb()
+    }, false)
+    request.send()
+  }
 }
 
-window.addEventListener('load', init);
